@@ -3,7 +3,7 @@ const app = express();
 const dotenv = require("dotenv");
 const cors = require("cors");
 const port = process.env.NEXT_PUBLIC_BASE_URL || 5000;
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 dotenv.config();
 
 app.use(cors());
@@ -30,6 +30,14 @@ async function run() {
 
     const database = client.db(process.env.MONGO_CLIENT_DB);
     const jobCollection = database.collection("jobs");
+    const companyCollection = database.collection("companies");
+    const userCollection = database.collection("user");
+
+    app.get("/api/users", async (req, res) => {
+      const cursor = userCollection.find().skip(7);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
     app.get("/api/jobs", async (req, res) => {
       const query = {};
@@ -44,9 +52,47 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/api/jobs/:id", async (req, res) => {
+      const id = req.params;
+      const result = await jobCollection.findOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+
     app.post("/api/jobs", async (req, res) => {
       const job = req.body;
-      const result = await jobCollection.insertOne(job);
+      const newJob = {
+        ...job,
+        createdAt: new Date(),
+      };
+      const result = await jobCollection.insertOne(newJob);
+      res.send(result);
+    });
+
+    // Company related apis
+
+    app.get("/api/companies", async (req, res) => {
+      const cursor = companyCollection.find().skip(3);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/api/my/companies", async (req, res) => {
+      const query = {};
+      if (req.query.recruiterId) {
+        query.recruiterId = req.query.recruiterId;
+      }
+      const result = await companyCollection.findOne(query);
+
+      res.send(result || {});
+    });
+
+    app.post("/api/companies", async (req, res) => {
+      const company = req.body;
+      const newCompany = {
+        ...company,
+        createdAt: new Date(),
+      };
+      const result = await companyCollection.insertOne(newCompany);
       res.send(result);
     });
 
