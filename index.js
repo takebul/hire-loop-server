@@ -32,6 +32,9 @@ async function run() {
     const jobCollection = database.collection("jobs");
     const companyCollection = database.collection("companies");
     const userCollection = database.collection("user");
+    const applicationsCollection = database.collection("applications");
+    const plansCollection = database.collection("plans");
+    const subscriptionsCollection = database.collection("subscriptions");
 
     app.get("/api/users", async (req, res) => {
       const cursor = userCollection.find().skip(7);
@@ -68,6 +71,32 @@ async function run() {
       res.send(result);
     });
 
+    // applications related apis
+
+    app.get("/api/applications", async (req, res) => {
+      const query = {};
+      if (req.query.applicantId) {
+        query.applicantId = req.query.applicantId;
+      }
+      if (req.query.jobId) {
+        query.jobId = req.query.jobId;
+      }
+
+      const cursor = applicationsCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.post("/api/applications", async (req, res) => {
+      const application = req.body;
+      const newApplication = {
+        ...application,
+        createdAt: new Date(),
+      };
+      const result = await applicationsCollection.insertOne(newApplication);
+      res.send(result);
+    });
+
     // Company related apis
 
     app.get("/api/companies", async (req, res) => {
@@ -80,6 +109,7 @@ async function run() {
       const query = {};
       if (req.query.recruiterId) {
         query.recruiterId = req.query.recruiterId;
+        console.log(req.query.recruiterId);
       }
       const result = await companyCollection.findOne(query);
 
@@ -94,6 +124,50 @@ async function run() {
       };
       const result = await companyCollection.insertOne(newCompany);
       res.send(result);
+    });
+
+    app.patch("/api/companies/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedCompany = req.body;
+      const result = await companyCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedCompany },
+      );
+      res.send(result);
+    });
+
+    // plans
+
+    app.get("/api/plans", async (req, res) => {
+      const query = {};
+      if (req.query.planId) {
+        query.id = req.query.planId;
+      }
+      const plan = await plansCollection.findOne(query);
+      res.send(plan);
+    });
+
+    // subscriptions
+    app.post("/api/subscriptions", async (req, res) => {
+      const data = req.body;
+      const subsInfo = {
+        ...data,
+        createdAt: new Date(),
+      };
+
+      const result = await subscriptionsCollection.insertOne(subsInfo);
+
+      // update the user plan information
+      const filter = { email: data.email };
+      const updatePlan = {
+        $set: {
+          plan: data.planId,
+        },
+      };
+
+      const updateResult = await userCollection.updateOne(filter, updatePlan);
+
+      res.send(updatePlan);
     });
 
     await client.db("admin").command({ ping: 1 });
