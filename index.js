@@ -109,7 +109,6 @@ async function run() {
       const query = {};
       if (req.query.recruiterId) {
         query.recruiterId = req.query.recruiterId;
-        console.log(req.query.recruiterId);
       }
       const result = await companyCollection.findOne(query);
 
@@ -141,9 +140,11 @@ async function run() {
     app.get("/api/plans", async (req, res) => {
       const query = {};
       if (req.query.planId) {
-        query.id = req.query.planId;
+        query.plan = req.query.planId;
       }
+
       const plan = await plansCollection.findOne(query);
+
       res.send(plan);
     });
 
@@ -167,7 +168,7 @@ async function run() {
 
       const updateResult = await userCollection.updateOne(filter, updatePlan);
 
-      res.send(updatePlan);
+      res.send(updateResult);
     });
 
     await client.db("admin").command({ ping: 1 });
